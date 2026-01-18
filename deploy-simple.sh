@@ -45,25 +45,67 @@ check_dependencies() {
     print_status "Dependencies check passed!"
 }
 
-# Clone repositories manually
+# Clone or copy repositories
 clone_repos() {
-    print_status "Cloning repositories..."
+    print_status "Setting up repositories..."
 
     # Remove existing repos if they exist
     rm -rf hrms-backend hrms-spc
 
-    # Clone fresh repositories
-    if git clone https://github.com/7UpadhyayKrishna/hrms-backend.git; then
-        print_status "Backend repository cloned successfully"
-    else
-        print_error "Failed to clone backend repository"
-        exit 1
+    # Try to clone from GitHub first
+    print_status "Attempting to clone from GitHub..."
+
+    # Try Singhadi27 repos first
+    BACKEND_CLONED=false
+    FRONTEND_CLONED=false
+
+    if git clone https://github.com/Singhadi27/hrms-backend.git 2>/dev/null; then
+        print_status "Backend repository cloned from Singhadi27 successfully"
+        BACKEND_CLONED=true
+    elif git clone https://github.com/7UpadhyayKrishna/hrms-backend.git 2>/dev/null; then
+        print_status "Backend repository cloned from 7UpadhyayKrishna successfully"
+        BACKEND_CLONED=true
     fi
 
-    if git clone https://github.com/7UpadhyayKrishna/hrms-spc.git; then
-        print_status "Frontend repository cloned successfully"
+    if git clone https://github.com/Singhadi27/hrms-spc.git 2>/dev/null; then
+        print_status "Frontend repository cloned from Singhadi27 successfully"
+        FRONTEND_CLONED=true
+    elif git clone https://github.com/7UpadhyayKrishna/hrms-spc.git 2>/dev/null; then
+        print_status "Frontend repository cloned from 7UpadhyayKrishna successfully"
+        FRONTEND_CLONED=true
+    fi
+
+    # If cloning failed, try to copy from deployment directory (if they exist)
+    if [ "$BACKEND_CLONED" = false ]; then
+        print_warning "GitHub cloning failed for backend, checking for local copy..."
+        if [ -d "../hrms-backend" ]; then
+            print_status "Copying backend from local directory..."
+            cp -r ../hrms-backend .
+            BACKEND_CLONED=true
+        else
+            print_error "Backend repository not found locally or on GitHub"
+            print_error "Please ensure hrms-backend exists in parent directory or check repository URLs"
+            exit 1
+        fi
+    fi
+
+    if [ "$FRONTEND_CLONED" = false ]; then
+        print_warning "GitHub cloning failed for frontend, checking for local copy..."
+        if [ -d "../hrms-spc" ]; then
+            print_status "Copying frontend from local directory..."
+            cp -r ../hrms-spc .
+            FRONTEND_CLONED=true
+        else
+            print_error "Frontend repository not found locally or on GitHub"
+            print_error "Please ensure hrms-spc exists in parent directory or check repository URLs"
+            exit 1
+        fi
+    fi
+
+    if [ "$BACKEND_CLONED" = true ] && [ "$FRONTEND_CLONED" = true ]; then
+        print_status "All repositories ready!"
     else
-        print_error "Failed to clone frontend repository"
+        print_error "Failed to setup repositories"
         exit 1
     fi
 }
