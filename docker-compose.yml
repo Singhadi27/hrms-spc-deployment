@@ -1,0 +1,31 @@
+services:
+  hrms-backend:
+    build:
+      context: ./hrms-backend
+      dockerfile: Dockerfile
+    container_name: hrms-backend
+    restart: always
+    env_file:
+      - ./hrms-backend/.env
+    environment:
+      - NODE_ENV=production
+      - CORS_ORIGIN=http://localhost:5173,http://localhost,http://localhost:80
+    expose:
+      - "5001"
+    networks:
+      - hrms-network
+
+  hrms-spc:
+    build:
+      context: ./hrms-spc/hrms-spc
+      dockerfile: Dockerfile
+    container_name: hrms-spc
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - hrms-network
+
+networks:
+  hrms-network:
+    driver: bridge
