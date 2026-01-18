@@ -80,43 +80,15 @@ setup_repos() {
     print_status "Repositories setup complete!"
 }
 
-# Create .env file if it doesn't exist
-create_env_file() {
+# Check .env file
+check_env_file() {
     if [ ! -f "hrms-backend/.env" ]; then
-        print_warning "Creating .env file template..."
-
-        cat > hrms-backend/.env << 'EOL'
-# HRMS Backend Environment Variables
-NODE_ENV=production
-PORT=5001
-
-# Database Configuration - UPDATE WITH YOUR MONGODB ATLAS URI
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/hrms
-
-# JWT Configuration - CHANGE THIS SECRET IN PRODUCTION
-JWT_SECRET=your-super-secure-jwt-secret-change-this-32-chars-minimum
-JWT_EXPIRES_IN=7d
-
-# CORS Configuration - UPDATE WITH YOUR EC2 PUBLIC IP
-CORS_ORIGIN=http://YOUR_EC2_PUBLIC_IP,http://YOUR_EC2_PUBLIC_IP:80
-FRONTEND_URL=http://YOUR_EC2_PUBLIC_IP
-
-# Email Configuration (optional)
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_SECURE=false
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
-
-# Other settings
-UPLOAD_PATH=./uploads
-MAX_FILE_SIZE=10485760
-EOL
-
-        print_warning "Please edit hrms-backend/.env with your actual configuration values!"
-        print_warning "Required: MONGODB_URI, JWT_SECRET, CORS_ORIGIN with your EC2 IP"
-        print_warning "Press Enter to continue after editing..."
-        read -p ""
+        print_error ".env file not found in hrms-backend/.env"
+        print_error "Please create the .env file with your configuration"
+        print_error "Required: MONGODB_URI, JWT_SECRET, CORS_ORIGIN"
+        exit 1
+    else
+        print_status ".env file found!"
     fi
 }
 
@@ -126,7 +98,7 @@ deploy() {
 
     check_dependencies
     setup_repos
-    create_env_file
+    check_env_file
 
     # Clean up any existing containers
     print_status "Cleaning up existing containers..."

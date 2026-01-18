@@ -14,12 +14,10 @@ services:
       - "5001"
     networks:
       - hrms-network
-    depends_on:
-      - clone-repos
 
   hrms-spc:
     build:
-      context: ./hrms-spc/hrms-spc
+      context: ./hrms-spc
       dockerfile: Dockerfile
     container_name: hrms-spc
     restart: always
@@ -27,21 +25,6 @@ services:
       - "80:80"
     networks:
       - hrms-network
-    depends_on:
-      - clone-repos
-
-  clone-repos:
-    image: alpine/git:latest
-    container_name: clone-repos
-    command: >
-      sh -c "
-        git clone https://github.com/7UpadhyayKrishna/hrms-backend.git hrms-backend &&
-        git clone https://github.com/7UpadhyayKrishna/hrms-spc.git hrms-spc &&
-        tail -f /dev/null
-      "
-    volumes:
-      - ./hrms-backend:/app/hrms-backend
-      - ./hrms-spc:/app/hrms-spc
 
 networks:
   hrms-network:
