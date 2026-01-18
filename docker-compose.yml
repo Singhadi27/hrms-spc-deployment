@@ -9,11 +9,13 @@ services:
       - ./hrms-backend/.env
     environment:
       - NODE_ENV=production
-      - CORS_ORIGIN=http://localhost:5173,http://localhost,http://localhost:80
+      - CORS_ORIGIN=http://localhost,http://localhost:80,http://localhost:5173
     expose:
       - "5001"
     networks:
       - hrms-network
+    depends_on:
+      - clone-repos
 
   hrms-spc:
     build:
@@ -25,6 +27,17 @@ services:
       - "80:80"
     networks:
       - hrms-network
+    depends_on:
+      - clone-repos
+
+  clone-repos:
+    build:
+      context: .
+      dockerfile: Dockerfile.clone
+    container_name: clone-repos
+    volumes:
+      - ./hrms-backend:/app/hrms-backend
+      - ./hrms-spc:/app/hrms-spc
 
 networks:
   hrms-network:
