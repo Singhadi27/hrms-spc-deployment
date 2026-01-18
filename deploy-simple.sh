@@ -45,7 +45,7 @@ check_dependencies() {
     print_status "Dependencies check passed!"
 }
 
-fic# Setup repositories (assume they're included in deployment)
+# Setup repositories (assume they're included in deployment)
 setup_repos() {
     print_status "Setting up repositories..."
 
