@@ -1,6 +1,6 @@
 # 🚀 HRMS Self-Contained Deployment
 
-This repository contains everything needed to deploy the HRMS (Human Resource Management System) application. It automatically clones and deploys both the backend and frontend components.
+This repository contains everything needed to deploy the HRMS (Human Resource Management System) application to AWS EC2. It automatically clones and deploys both the backend and frontend components.
 
 ## 📋 What's Included
 
@@ -8,17 +8,22 @@ This repository contains everything needed to deploy the HRMS (Human Resource Ma
 - **Frontend UI** (`hrms-spc`) - React application with nginx
 - **Docker Compose** - Orchestrates all services
 - **Automated Cloning** - Fetches latest code from GitHub during deployment
+- **EC2 Optimized** - Configured for cloud deployment
 
-## 🛠️ Quick Start
+## 🛠️ EC2 Deployment Steps
 
 ### Prerequisites
-- Docker & Docker Compose installed
+- AWS EC2 instance (t3.medium recommended)
+- Docker & Docker Compose installed on EC2
 - Git installed
-- At least 4GB RAM, 2 CPU cores recommended
+- Security groups configured (ports 22, 80, 443)
 
-### One-Command Deployment
+### One-Command EC2 Deployment
 
 ```bash
+# SSH into your EC2 instance
+ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP
+
 # Clone this deployment repository
 git clone https://github.com/Singhadi27/hrms-spc-deployment.git
 cd hrms-spc-deployment
@@ -27,7 +32,7 @@ cd hrms-spc-deployment
 ./deploy.sh
 ```
 
-That's it! Your application will be running at `http://localhost`
+That's it! Your application will be running at `http://YOUR_EC2_PUBLIC_IP`
 
 ## 📁 Project Structure
 
@@ -60,27 +65,35 @@ hrms-spc-deployment/
 ./deploy.sh cleanup
 ```
 
-## ⚙️ Configuration
+## ⚙️ EC2 Configuration
 
 ### Environment Variables
 
-Before first deployment, configure your environment:
+Before deployment, configure your environment for EC2:
 
 ```bash
 # Edit the .env file (created automatically)
 nano hrms-backend/.env
 ```
 
-Required variables:
+Required variables for EC2:
 ```bash
-# Database
-MONGODB_URI=mongodb://your-connection-string
+# Database - Use MongoDB Atlas for EC2
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/hrms
 
-# Security
-JWT_SECRET=your-super-secure-secret
+# Security - Generate a strong secret
+JWT_SECRET=your-super-secure-jwt-secret-change-this-in-production-32-chars-min
 
-# CORS (auto-configured for local development)
-CORS_ORIGIN=http://localhost,http://localhost:80
+# CORS - Configure for your EC2 public IP and domain
+CORS_ORIGIN=http://YOUR_EC2_PUBLIC_IP,http://YOUR_EC2_PUBLIC_IP:80,https://yourdomain.com
+FRONTEND_URL=http://YOUR_EC2_PUBLIC_IP
+
+# Email Configuration (optional but recommended)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_SECURE=false
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
 ```
 
 ### Production Deployment
@@ -104,12 +117,14 @@ For production, update these settings:
 
 4. **Network**: Services communicate via Docker network
 
-## 🌐 Access Points
+## 🌐 EC2 Access Points
 
-After deployment:
-- **Frontend**: http://localhost (nginx on port 80)
-- **Backend API**: http://localhost:5001
-- **Health Check**: http://localhost:5001/health
+After deployment on EC2:
+- **Frontend**: http://YOUR_EC2_PUBLIC_IP (nginx on port 80)
+- **Backend API**: http://YOUR_EC2_PUBLIC_IP:5001
+- **Health Check**: http://YOUR_EC2_PUBLIC_IP:5001/health
+
+**Note**: Port 5001 is exposed internally. For production, consider using a reverse proxy or load balancer.
 
 ## 🔍 Troubleshooting
 
@@ -128,7 +143,7 @@ docker-compose logs -f hrms-backend
 docker-compose logs -f hrms-spc
 ```
 
-### Common Issues
+### EC2-Specific Issues
 
 **Port 80 already in use:**
 ```bash
@@ -136,21 +151,49 @@ sudo netstat -tulpn | grep :80
 sudo systemctl stop httpd  # Stop Apache if running
 ```
 
-**Permission denied:**
+**Docker permission denied:**
 ```bash
-sudo usermod -a -G docker $USER
+sudo usermod -a -G docker ec2-user
 # Logout and login again
+exit
+ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP
 ```
 
+**Cannot connect to EC2:**
+- Check Security Groups allow ports 22, 80
+- Verify your IP is allowed for SSH (22)
+- Use correct key pair (.pem file)
+
 **Database connection failed:**
-- Check MongoDB connection string
-- Ensure MongoDB is running and accessible
-- Verify network connectivity
+- Use MongoDB Atlas (cloud) instead of local MongoDB
+- Check connection string format
+- Verify network connectivity from EC2
+
+**Build fails on t2.micro:**
+- Upgrade to t3.medium or larger instance
+- t2.micro has insufficient memory for Docker builds
+
+**Application not accessible:**
+```bash
+# Check if services are running
+docker-compose ps
+
+# Check EC2 security groups
+# Ensure HTTP (80) is open to 0.0.0.0/0
+
+# Test from EC2 instance
+curl http://localhost
+curl http://localhost:5001/health
+```
 
 **Build fails:**
 ```bash
 # Clear Docker cache
 docker system prune -f
+
+# Check available disk space
+df -h
+
 # Try again
 ./deploy.sh update
 ```
@@ -169,26 +212,66 @@ This will:
 3. Clone fresh repositories
 4. Rebuild and restart services
 
-## 🚀 Production Deployment
+## 🚀 AWS EC2 Production Deployment
 
-For AWS EC2 or other cloud platforms:
+### Step-by-Step EC2 Setup:
 
-```bash
-# On your server
-git clone https://github.com/Singhadi27/hrms-spc-deployment.git
-cd hrms-spc-deployment
+1. **Launch EC2 Instance:**
+   ```bash
+   # Instance Details:
+   # - AMI: Amazon Linux 2
+   # - Instance Type: t3.medium (2 vCPU, 4GB RAM)
+   # - Storage: 20GB gp3
+   # - Security Group: Allow SSH (22), HTTP (80), HTTPS (443)
+   ```
 
-# Configure environment
-nano hrms-backend/.env  # Add production settings
+2. **Connect and Setup:**
+   ```bash
+   # SSH into your instance
+   ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP
 
-# Deploy
-./deploy.sh
-```
+   # Update system
+   sudo yum update -y
 
-### AWS EC2 Specific:
-- Instance type: t3.medium or larger
-- Security groups: Allow ports 22, 80, 443
-- Storage: 20GB minimum
+   # Install Docker
+   sudo amazon-linux-extras install docker -y
+   sudo systemctl start docker
+   sudo systemctl enable docker
+   sudo usermod -a -G docker ec2-user
+
+   # Install Docker Compose
+   sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+   sudo chmod +x /usr/local/bin/docker-compose
+
+   # Install Git
+   sudo yum install -y git
+
+   # Logout and login again
+   exit
+   ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP
+   ```
+
+3. **Deploy Application:**
+   ```bash
+   # Clone and deploy
+   git clone https://github.com/Singhadi27/hrms-spc-deployment.git
+   cd hrms-spc-deployment
+
+   # Configure environment
+   nano hrms-backend/.env  # Add your production settings
+
+   # Deploy
+   ./deploy.sh
+   ```
+
+### AWS EC2 Specific Requirements:
+- **Instance Type**: t3.medium or larger (t2.micro won't work for Docker builds)
+- **Security Groups**:
+  - SSH (22) - restrict to your IP only
+  - HTTP (80) - 0.0.0.0/0
+  - HTTPS (443) - 0.0.0.0/0 (if using SSL)
+- **Storage**: 20GB minimum
+- **Region**: Choose closest to your users
 
 ## 📊 Monitoring
 
@@ -233,6 +316,15 @@ If you encounter issues:
 3. Ensure all prerequisites are met
 4. Check GitHub repository URLs are accessible
 
-## 🎉 Success!
+## 🎉 EC2 Deployment Success!
 
-Your HRMS application is now deployed with a single command! The system automatically handles code cloning, dependency installation, and service orchestration.
+Your HRMS application is now deployed on AWS EC2 with a single command! The system automatically handles code cloning, dependency installation, and service orchestration.
+
+**Your application is live at: http://YOUR_EC2_PUBLIC_IP**
+
+### Next Steps for Production:
+1. **Add a Domain**: Use Route 53 to point a domain to your EC2 IP
+2. **SSL Certificate**: Use AWS Certificate Manager or Let's Encrypt
+3. **Database**: Set up MongoDB Atlas for production data
+4. **Backup**: Configure automated backups
+5. **Monitoring**: Set up CloudWatch alarms

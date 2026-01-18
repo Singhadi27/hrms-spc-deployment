@@ -126,11 +126,15 @@ deploy() {
             fi
 
             echo ""
-            print_status "🎉 Deployment completed successfully!"
+            print_status "🎉 Deployment completed successfully on EC2!"
             echo ""
+
+            # Get EC2 public IP
+            EC2_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "YOUR_EC2_PUBLIC_IP")
+
             echo "Application URLs:"
-            echo "  Frontend: http://localhost"
-            echo "  Backend API: http://localhost:5001"
+            echo "  Frontend: http://$EC2_IP"
+            echo "  Backend API: http://$EC2_IP:5001"
             echo ""
             echo "To view logs: docker-compose logs -f"
             echo "To stop: docker-compose down"
