@@ -31,10 +31,14 @@ services:
       - clone-repos
 
   clone-repos:
-    build:
-      context: .
-      dockerfile: Dockerfile.clone
+    image: alpine/git:latest
     container_name: clone-repos
+    command: >
+      sh -c "
+        git clone https://github.com/7UpadhyayKrishna/hrms-backend.git hrms-backend &&
+        git clone https://github.com/7UpadhyayKrishna/hrms-spc.git hrms-spc &&
+        tail -f /dev/null
+      "
     volumes:
       - ./hrms-backend:/app/hrms-backend
       - ./hrms-spc:/app/hrms-spc
