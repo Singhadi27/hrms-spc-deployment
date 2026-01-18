@@ -45,69 +45,39 @@ check_dependencies() {
     print_status "Dependencies check passed!"
 }
 
-# Clone or copy repositories
-clone_repos() {
+fic# Setup repositories (assume they're included in deployment)
+setup_repos() {
     print_status "Setting up repositories..."
 
-    # Remove existing repos if they exist
-    rm -rf hrms-backend hrms-spc
-
-    # Try to clone from GitHub first
-    print_status "Attempting to clone from GitHub..."
-
-    # Try Singhadi27 repos first
-    BACKEND_CLONED=false
-    FRONTEND_CLONED=false
-
-    if git clone https://github.com/Singhadi27/hrms-backend.git 2>/dev/null; then
-        print_status "Backend repository cloned from Singhadi27 successfully"
-        BACKEND_CLONED=true
-    elif git clone https://github.com/7UpadhyayKrishna/hrms-backend.git 2>/dev/null; then
-        print_status "Backend repository cloned from 7UpadhyayKrishna successfully"
-        BACKEND_CLONED=true
+    # Check if repositories exist in deployment directory
+    if [ -d "hrms-backend" ] && [ -d "hrms-spc" ]; then
+        print_status "Repositories found in deployment directory!"
+        print_status "Using included repositories (no GitHub cloning needed)"
+        return 0
     fi
 
-    if git clone https://github.com/Singhadi27/hrms-spc.git 2>/dev/null; then
-        print_status "Frontend repository cloned from Singhadi27 successfully"
-        FRONTEND_CLONED=true
-    elif git clone https://github.com/7UpadhyayKrishna/hrms-spc.git 2>/dev/null; then
-        print_status "Frontend repository cloned from 7UpadhyayKrishna successfully"
-        FRONTEND_CLONED=true
-    fi
+    # If not found, try to copy from parent directory (development setup)
+    print_warning "Repositories not found in deployment directory, checking parent..."
 
-    # If cloning failed, try to copy from deployment directory (if they exist)
-    if [ "$BACKEND_CLONED" = false ]; then
-        print_warning "GitHub cloning failed for backend, checking for local copy..."
-        if [ -d "../hrms-backend" ]; then
-            print_status "Copying backend from local directory..."
-            cp -r ../hrms-backend .
-            BACKEND_CLONED=true
-        else
-            print_error "Backend repository not found locally or on GitHub"
-            print_error "Please ensure hrms-backend exists in parent directory or check repository URLs"
-            exit 1
-        fi
-    fi
-
-    if [ "$FRONTEND_CLONED" = false ]; then
-        print_warning "GitHub cloning failed for frontend, checking for local copy..."
-        if [ -d "../hrms-spc" ]; then
-            print_status "Copying frontend from local directory..."
-            cp -r ../hrms-spc .
-            FRONTEND_CLONED=true
-        else
-            print_error "Frontend repository not found locally or on GitHub"
-            print_error "Please ensure hrms-spc exists in parent directory or check repository URLs"
-            exit 1
-        fi
-    fi
-
-    if [ "$BACKEND_CLONED" = true ] && [ "$FRONTEND_CLONED" = true ]; then
-        print_status "All repositories ready!"
+    if [ -d "../hrms-backend" ]; then
+        print_status "Copying backend from parent directory..."
+        cp -r ../hrms-backend . 2>/dev/null || print_warning "Some files may not have copied (normal for dev setup)"
     else
-        print_error "Failed to setup repositories"
+        print_error "Backend repository not found"
+        print_error "Please ensure hrms-backend is in the deployment directory or parent directory"
         exit 1
     fi
+
+    if [ -d "../hrms-spc" ]; then
+        print_status "Copying frontend from parent directory..."
+        cp -r ../hrms-spc . 2>/dev/null || print_warning "Some files may not have copied (normal for dev setup)"
+    else
+        print_error "Frontend repository not found"
+        print_error "Please ensure hrms-spc is in the deployment directory or parent directory"
+        exit 1
+    fi
+
+    print_status "Repositories setup complete!"
 }
 
 # Create .env file if it doesn't exist
@@ -155,7 +125,7 @@ deploy() {
     print_status "Starting simple deployment..."
 
     check_dependencies
-    clone_repos
+    setup_repos
     create_env_file
 
     # Clean up any existing containers
